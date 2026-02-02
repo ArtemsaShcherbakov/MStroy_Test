@@ -1,6 +1,13 @@
-import './assets/main.css'
+import { createApp } from "vue";
+import App from "./App.vue";
 
-import { createApp } from 'vue'
-import App from './App.vue'
+import { ModuleRegistry } from "ag-grid-community";
+import { AllCommunityModule } from "ag-grid-community";
+import { AllEnterpriseModule } from "ag-grid-enterprise";
 
-createApp(App).mount('#app')
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+
+ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
+
+createApp(App).mount("#app");
