@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import { TreeStore } from "./TreeStore";
 
-import { ITEMS } from "@/data/constants";
+import { ITEMS } from "@/data";
 
 import type { ITreeItem } from "@/types";
 
@@ -135,5 +135,88 @@ describe("addItem()", () => {
   it("не ломает существующие связи", () => {
     store.addItem(newItem);
     expect(store.getChildren(1).length).toBeGreaterThan(0);
+  });
+});
+
+/* ======================================================
+   getAllChildren()
+====================================================== */
+describe("getAllChildren()", () => {
+  it("возвращает всех потомков рекурсивно", () => {
+    const children = store.getAllChildren("91064cee");
+    const ids = children.map((i) => i.id);
+
+    expect(ids).toEqual(expect.arrayContaining([4, 5, 6, 7, 8]));
+  });
+
+  it("не ломается если у элемента нет детей", () => {
+    expect(store.getAllChildren(3)).toEqual([]);
+  });
+
+  it("работает для корневого элемента", () => {
+    const children = store.getAllChildren(1);
+    const ids = children.map((i) => i.id);
+    expect(ids).toEqual(expect.arrayContaining(["91064cee", 3, 4, 5, 6, 7, 8]));
+  });
+});
+
+/* ======================================================
+   updateItem()
+====================================================== */
+describe("updateItem()", () => {
+  it("обновляет поле элемента", () => {
+    const updated = { ...store.getItem(3)!, label: "Обновлённый Айтем 3" };
+    store.updateItem(updated);
+
+    expect(store.getItem(3)?.label).toBe("Обновлённый Айтем 3");
+  });
+
+  it("обновляет родителя элемента", () => {
+    // Переносим 3 под '91064cee'
+    const updated = { ...store.getItem(3)!, parent: "91064cee" };
+    store.updateItem(updated);
+
+    expect(store.getItem(3)?.parent).toBe("91064cee");
+    // Проверяем, что в старом родителе 1 больше нет 3
+    expect(store.getChildren(1).map((i) => i.id)).not.toContain(3);
+    // Проверяем, что в новом родителе есть 3
+    expect(store.getChildren("91064cee").map((i) => i.id)).toContain(3);
+  });
+
+  it("ничего не делает, если элемента нет", () => {
+    const fake = { id: 999, parent: null, label: "Fake" };
+    store.updateItem(fake);
+    expect(store.getItem(999)).toBeUndefined();
+  });
+});
+
+/* ======================================================
+   removeItem()
+====================================================== */
+describe("removeItem()", () => {
+  it("удаляет элемент без детей", () => {
+    store.removeItem(3);
+    expect(store.getItem(3)).toBeUndefined();
+    expect(store.getChildren(1).map((i) => i.id)).not.toContain(3);
+  });
+
+  it("удаляет элемент с дочерними элементами рекурсивно", () => {
+    // Удаляем '91064cee' — вместе с 4,5,6,7,8
+    store.removeItem("91064cee");
+
+    expect(store.getItem("91064cee")).toBeUndefined();
+    expect(store.getItem(4)).toBeUndefined();
+    expect(store.getItem(5)).toBeUndefined();
+    expect(store.getItem(6)).toBeUndefined();
+    expect(store.getItem(7)).toBeUndefined();
+    expect(store.getItem(8)).toBeUndefined();
+
+    // Старый родитель больше не содержит удалённый элемент
+    expect(store.getChildren(1).map((i) => i.id)).not.toContain("91064cee");
+  });
+
+  it("не ломает другие элементы", () => {
+    store.removeItem("91064cee");
+    expect(store.getItem(1)).toBeDefined();
   });
 });
